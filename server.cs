@@ -1,22 +1,44 @@
-registerOutputEvent(fxDtsBrick, "matchSlayerTeam", "string 128 200");
-registerInputEvent(fxDtsBrick, "onSlayerTeamMatch", "Self fxDtsBrick\tPlayer Player\tClient GameConnection\tMinigame Minigame");
+registerOutputEvent(fxDtsBrick, "matchSlayerTeam", "string 128 200" TAB "list Players 0 Bots 1 Both 2");
+registerInputEvent(fxDtsBrick, "onSlayerTeamMatchPlayer", "Self fxDtsBrick\tPlayer Player\tClient GameConnection\tMinigame Minigame");
+registerInputEvent(fxDtsBrick, "onSlayerTeamMatchBot", "Self fxDtsBrick\tPlayer Player\tClient GameConnection\tMinigame Minigame");
 
-function fxDtsBrick::matchSlayerTeam(%this, %match)
+function fxDtsBrick::matchSlayerTeam(%this, %match, %type)
 {
 	if(!isFunction("GameConnection", "getTeam"))
 		return; //you don't have slayer enabled?
 	
-	for(%i = clientGroup.getCount()-1; %i >= 0; %i--)
+	if(%type == 0 || %type == 2)
 	{
-		%client = clientGroup.getObject(%i);
-		if(%client.getTeam().title $= %match)
+		for(%i = clientGroup.getCount()-1; %i >= 0; %i--)
 		{
-			$InputTarget_["Self"] = %this;
-			$InputTarget_["Player"] = isObject(%client.player) ? %client.player : 0;
-			$InputTarget_["Client"] = %client;
-			$InputTarget_["MiniGame"] = getMiniGameFromObject (%client);
+			%client = clientGroup.getObject(%i);
+			if(%client.getTeam().title $= %match)
+			{
+				$InputTarget_["Self"] 		= %this;
+				$InputTarget_["Player"] 	= isObject(%client.player) ? %client.player : 0;
+				$InputTarget_["Bot"] 		= 0;
+				$InputTarget_["Client"] 	= %client;
+				$InputTarget_["MiniGame"] 	= getMiniGameFromObject (%client);
 
-			%this.processInputEvent("onSlayerTeamMatch", %client);
+				%this.processInputEvent("onSlayerTeamMatchPlayer", %client);
+			}
+		}
+	}
+	if(%type == 1 || %type == 2)
+	{
+		for(%i = mainHoleBotSet.getCount() - 1; %i >= 0; %i--)
+		{
+			%aiplayer = mainHoleBotSet.getObject(%i);
+			if(%aiplayer.getTeam().title $= %match)
+			{
+				$InputTarget_["Self"] 		= %this;
+				$InputTarget_["Player"] 	= %aiplayer;
+				$InputTarget_["Bot"] 		= %aiplayer;
+				$InputTarget_["aiplayer"] 	= %aiplayer;
+				$InputTarget_["MiniGame"] 	= getMiniGameFromObject (%aiplayer);
+
+				%this.processInputEvent("onSlayerTeamMatchBot", %aiplayer);
+			}
 		}
 	}
 }
