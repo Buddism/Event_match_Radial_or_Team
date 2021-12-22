@@ -46,12 +46,12 @@ function fxDtsBrick::matchSlayerTeam(%this, %match, %type)
 registerOutputEvent(fxDtsBrick, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100" TAB "string 50 100");
 registerInputEvent(fxDtsBrick, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
 
-function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %team)
+function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %strCheckValue)
 {
-	if(!isFunction("GameConnection", "getTeam"))
-		%doTeamCheck = false;
+	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+		%doValueCheck = false;
 	else
-		%doTeamCheck = %team !$= "";
+		%doValueCheck = %strCheckValue !$= "";
 
 	%types[0] = $TypeMasks::PlayerObjectType; //Player
 	%types[1] = $TypeMasks::PlayerObjectType; //Bot
@@ -88,6 +88,9 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %team)
 
 		if(%typeID == 2)
 		{
+			if(%doValueCheck && %object.getName() !$= %strCheckValue)
+				continue;
+				
 			$InputTarget_["Self"] 		= %object; //weird to think about
 			$InputTarget_["Bot"] 		= %object.hBot;
 			$InputTarget_["Vehicle"] 	= %object.vehicle;
@@ -107,7 +110,7 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %team)
 				case 0: // PLAYER
 					if(%object.getClassName() !$= "Player")
 						continue; //skip AIPLAYERS, PLAYERS only
-					if(%doTeamCheck && isObject(%object.client) && %object.client.getTeam().title !$= %team)
+					if(%doValueCheck && isObject(%object.client) && %object.client.getTeam().title !$= %strCheckValue)
 						continue;
 
 					$InputTarget_["Player"] 	= %object;
@@ -118,7 +121,7 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %team)
 				case 1: // BOT
 					if(%object.getClassName() !$= "AiPlayer")
 						continue; //skip AIPLAYERS, PLAYERS only
-					if(%doTeamCheck && %object.getTeam().title !$= %team)
+					if(%doValueCheck && %object.getTeam().title !$= %strCheckValue)
 						continue;
 						
 					$InputTarget_["Player"] 	= %object;
