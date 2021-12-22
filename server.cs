@@ -43,11 +43,16 @@ function fxDtsBrick::matchSlayerTeam(%this, %match, %type)
 	}
 }
 
-registerOutputEvent(fxDtsBrick, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100");
+registerOutputEvent(fxDtsBrick, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100" TAB "string 50 100");
 registerInputEvent(fxDtsBrick, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
 
-function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds)
+function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %team)
 {
+	if(!isFunction("GameConnection", "getTeam"))
+		%doTeamCheck = false;
+	else
+		%doTeamCheck = %team !$= "";
+
 	%types[0] = $TypeMasks::PlayerObjectType; //Player
 	%types[1] = $TypeMasks::PlayerObjectType; //Bot
 	%types[2] = $TypeMasks::FxBrickAlwaysObjectType; //Brick
@@ -102,6 +107,8 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds)
 				case 0: // PLAYER
 					if(%object.getClassName() !$= "Player")
 						continue; //skip AIPLAYERS, PLAYERS only
+					if(%doTeamCheck && isObject(%object.client) && %object.client.getTeam().title !$= %team)
+						continue;
 
 					$InputTarget_["Player"] 	= %object;
 					$InputTarget_["Client"] 	= %object.client;
@@ -111,7 +118,9 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds)
 				case 1: // BOT
 					if(%object.getClassName() !$= "AiPlayer")
 						continue; //skip AIPLAYERS, PLAYERS only
-
+					if(%doTeamCheck && %object.getTeam().title !$= %team)
+						continue;
+						
 					$InputTarget_["Player"] 	= %object;
 					$InputTarget_["Client"] 	= %object; //hbot clients are themselves i believe
 					$InputTarget_["Bot"] 		= %object;
