@@ -212,17 +212,6 @@ function Player::matchRadialCheck(%this, %typeID, %information, %bounds, %strChe
 	
 
 	%position = %this.getPosition();
-	switch$(%radiusType)
-	{
-		case "BOT":
-			%position = $InputTarget_["Bot"].getPosition();
-
-		case "PLAYER":
-			%position = $InputTarget_["Player"].getPosition();
-			
-		default:
-			%position = %brick.getPosition();
-	}
 	
 	initContainerRadiusSearch(%position, %radius, %typeMask);
 	while(%object = containerSearchNext())
@@ -352,17 +341,6 @@ function AiPlayer::matchRadialCheck(%this, %typeID, %information, %bounds, %strC
 	
 
 	%position = %this.getPosition();
-	switch$(%radiusType)
-	{
-		case "BOT":
-			%position = $InputTarget_["Bot"].getPosition();
-
-		case "PLAYER":
-			%position = $InputTarget_["Player"].getPosition();
-			
-		default:
-			%position = %brick.getPosition();
-	}
 	
 	initContainerRadiusSearch(%position, %radius, %typeMask);
 	while(%object = containerSearchNext())
