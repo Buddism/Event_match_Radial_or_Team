@@ -46,7 +46,7 @@ function fxDtsBrick::matchSlayerTeam(%this, %match, %type)
 registerOutputEvent(fxDtsBrick, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100" TAB "string 50 100");
 registerInputEvent(fxDtsBrick, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
 
-function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %strCheckValue)
+function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %strCheckValue)
 {
 	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
 		%doValueCheck = false;
@@ -60,8 +60,7 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %str
 	%types[5] = $TypeMasks::ProjectileObjectType;
 
 	%typeMask = %types[%typeID];
-	%radius = firstWord(%radiusdata) * 1;
-	%radiusType = getWord(%radiusdata, 1);
+	%radius = %radius * 1;
 
 	%boundsLow = getWord(%bounds, 0);
 	%boundsHigh = getWord(%bounds, 1);
@@ -81,19 +80,7 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %str
 	}
 	
 
-	//%position = %this.getPosition();
-	switch$(%radiusType)
-	{
-		case "BOT":
-			%position = $InputTarget_["Bot"].getPosition();
-
-		case "PLAYER":
-			%position = $InputTarget_["Player"].getPosition();
-			
-		default:
-			%position = %this.getPosition();
-	}
-	
+	%position = %this.getPosition();
 	initContainerRadiusSearch(%position, %radius, %typeMask);
 	while(%object = containerSearchNext())
 	{
@@ -124,7 +111,8 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %str
 				case 0: // PLAYER
 					if(%object.getClassName() !$= "Player")
 						continue; //skip AIPLAYERS, PLAYERS only
-					if(%doValueCheck && isObject(%object.client) && %object.client.getTeam().title !$= %strCheckValue)
+
+					if(%doValueCheck && isObject(%object.client) && %object.client.getTeam().name !$= %strCheckValue)
 						continue;
 
 					$InputTarget_["Player"] 	= %object;
@@ -135,7 +123,8 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %str
 				case 1: // BOT
 					if(%object.getClassName() !$= "AiPlayer")
 						continue; //skip AIPLAYERS, PLAYERS only
-					if(%doValueCheck && %object.getTeam().title !$= %strCheckValue)
+
+					if(%doValueCheck && %object.getTeam().name !$= %strCheckValue)
 						continue;
 						
 					$InputTarget_["Player"] 	= %object;
@@ -170,6 +159,289 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radiusdata, %bounds, %str
 			{
 				if(%this.eventInput[%i] $= "onRadialMatch")
 					%this.eventEnabled[%i] = %oldEnabled[%i];
+			}
+		}
+	}
+}
+
+registerInputEvent(Player, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
+
+function Player::matchRadialCheck(%this, %typeID, %information, %bounds, %strCheckValue)
+{
+	if(restWords(%information) $= "")
+	{
+		//if(%this.client.isAdmin)
+			//%this.client.chatMessage("\c0ERROR: \c6MISSING EVENT PROCESSOR BRICK [" @ %information")
+		return;
+	}
+
+	%brick = nameToID("_" @ restWords(%information)); //jank
+	if(!isObject(%brick))
+		return;
+
+	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+		%doValueCheck = false;
+	else
+		%doValueCheck = %strCheckValue !$= "";
+
+	%types[0] = $TypeMasks::PlayerObjectType; //Player
+	%types[1] = $TypeMasks::PlayerObjectType; //Bot
+	%types[2] = $TypeMasks::FxBrickAlwaysObjectType; //Brick
+	%types[4] = $TypeMasks::VehicleObjectType;
+	%types[5] = $TypeMasks::ProjectileObjectType;
+
+	%typeMask = %types[%typeID];
+	%radius = firstWord(%information) * 1;
+
+	%boundsLow = getWord(%bounds, 0);
+	%boundsHigh = getWord(%bounds, 1);
+	if(%boundsHigh !$= "" && %boundsLow !$= "")
+	{
+		for(%i = 0; %i < %brick.numEvents; %i++)
+		{
+			if(%i < %boundsLow || %i > %boundsHigh) //non-matching
+			{
+				if(%brick.eventInput[%i] $= "onRadialMatch")
+				{
+					%oldEnabled[%i] = %brick.eventEnabled[%i];
+					%brick.eventEnabled[%i] = 0;
+				}
+			}
+		}
+	}
+	
+
+	%position = %this.getPosition();
+	switch$(%radiusType)
+	{
+		case "BOT":
+			%position = $InputTarget_["Bot"].getPosition();
+
+		case "PLAYER":
+			%position = $InputTarget_["Player"].getPosition();
+			
+		default:
+			%position = %brick.getPosition();
+	}
+	
+	initContainerRadiusSearch(%position, %radius, %typeMask);
+	while(%object = containerSearchNext())
+	{
+		if(%object == %brick)
+			continue;
+
+		if(%typeID == 2)
+		{
+			if(%doValueCheck && %object.getName() !$= %strCheckValue)
+				continue;
+				
+			$InputTarget_["Self"] 		= %object; //weird to think about
+			$InputTarget_["Bot"] 		= %object.hBot;
+			$InputTarget_["Vehicle"] 	= %object.vehicle;
+			if(!$Server::Lan && isObject(%client = %object.getGroup().getClient()))
+			{
+				$InputTarget_["Client"] = %client;
+				$InputTarget_["Player"] = %client.player;
+			}
+			$InputTarget_["Projectile"] = 0;
+			$InputTarget_["MiniGame"] 	= getMiniGameFromObject (%object);
+
+		} else {
+			$InputTarget_["Self"] = %brick;
+
+			switch(%typeID)
+			{
+				case 0: // PLAYER
+					if(%object.getClassName() !$= "Player")
+						continue; //skip AIPLAYERS, PLAYERS only
+
+					if(%doValueCheck && isObject(%object.client) && %object.client.getTeam().name !$= %strCheckValue)
+						continue;
+
+					$InputTarget_["Player"] 	= %object;
+					$InputTarget_["Client"] 	= %object.client;
+					$InputTarget_["Bot"] 		= %object; //this could end poorly but here we go
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= 0;
+				case 1: // BOT
+					if(%object.getClassName() !$= "AiPlayer")
+						continue; //skip AIPLAYERS, PLAYERS only
+						
+					if(%doValueCheck && %object.getTeam().name !$= %strCheckValue)
+						continue;
+						
+					$InputTarget_["Player"] 	= %object;
+					$InputTarget_["Client"] 	= %object; //hbot clients are themselves i believe
+					$InputTarget_["Bot"] 		= %object;
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= 0;
+				case 4: // VEHICLE
+					$InputTarget_["Player"] 	= %object.getControllingObject();
+					$InputTarget_["Client"] 	= %object.getControllingClient();
+					$InputTarget_["Bot"] 		= %object.getControllingObject();
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= %object;
+				case 5: // PROJECTILE
+					$InputTarget_["Projectile"] = %object;
+					$InputTarget_["Player"] 	= %object.sourceObject;
+					$InputTarget_["Client"] 	= %object.client;
+					$InputTarget_["Vehicle"] 	= 0;
+					$InputTarget_["Bot"] 		= 0;
+			}
+			$InputTarget_["MiniGame"] 			= getMiniGameFromObject (%object);
+		}
+		
+		%brick.processInputEvent("onRadialMatch", $InputTarget_["Client"]); //might anger quotaobjects
+	}
+
+	if(%boundsHigh !$= "" && %boundsLow !$= "")
+	{
+		for(%i = 0; %i < %brick.numEvents; %i++)
+		{
+			if(%i < %boundsLow || %i > %boundsHigh) //non-matching
+			{
+				if(%brick.eventInput[%i] $= "onRadialMatch")
+					%brick.eventEnabled[%i] = %oldEnabled[%i];
+			}
+		}
+	}
+}
+
+
+registerInputEvent(Bot, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
+
+function AiPlayer::matchRadialCheck(%this, %typeID, %information, %bounds, %strCheckValue)
+{
+	if(restWords(%information) $= "")
+		return;
+
+	%brick = nameToID("_" @ restWords(%information)); //jank
+	if(!isObject(%brick))
+		return;
+
+	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+		%doValueCheck = false;
+	else
+		%doValueCheck = %strCheckValue !$= "";
+
+	%types[0] = $TypeMasks::PlayerObjectType; //Player
+	%types[1] = $TypeMasks::PlayerObjectType; //Bot
+	%types[2] = $TypeMasks::FxBrickAlwaysObjectType; //Brick
+	%types[4] = $TypeMasks::VehicleObjectType;
+	%types[5] = $TypeMasks::ProjectileObjectType;
+
+	%typeMask = %types[%typeID];
+	%radius = firstWord(%information) * 1;
+
+	%boundsLow = getWord(%bounds, 0);
+	%boundsHigh = getWord(%bounds, 1);
+	if(%boundsHigh !$= "" && %boundsLow !$= "")
+	{
+		for(%i = 0; %i < %brick.numEvents; %i++)
+		{
+			if(%i < %boundsLow || %i > %boundsHigh) //non-matching
+			{
+				if(%brick.eventInput[%i] $= "onRadialMatch")
+				{
+					%oldEnabled[%i] = %brick.eventEnabled[%i];
+					%brick.eventEnabled[%i] = 0;
+				}
+			}
+		}
+	}
+	
+
+	%position = %this.getPosition();
+	switch$(%radiusType)
+	{
+		case "BOT":
+			%position = $InputTarget_["Bot"].getPosition();
+
+		case "PLAYER":
+			%position = $InputTarget_["Player"].getPosition();
+			
+		default:
+			%position = %brick.getPosition();
+	}
+	
+	initContainerRadiusSearch(%position, %radius, %typeMask);
+	while(%object = containerSearchNext())
+	{
+		if(%object == %brick)
+			continue;
+
+		if(%typeID == 2)
+		{
+			if(%doValueCheck && %object.getName() !$= %strCheckValue)
+				continue;
+				
+			$InputTarget_["Self"] 		= %object; //weird to think about
+			$InputTarget_["Bot"] 		= %object.hBot;
+			$InputTarget_["Vehicle"] 	= %object.vehicle;
+			if(!$Server::Lan && isObject(%client = %object.getGroup().getClient()))
+			{
+				$InputTarget_["Client"] = %client;
+				$InputTarget_["Player"] = %client.player;
+			}
+			$InputTarget_["Projectile"] = 0;
+			$InputTarget_["MiniGame"] 	= getMiniGameFromObject (%object);
+
+		} else {
+			$InputTarget_["Self"] = %brick;
+
+			switch(%typeID)
+			{
+				case 0: // PLAYER
+					if(%object.getClassName() !$= "Player")
+						continue; //skip AIPLAYERS, PLAYERS only
+
+					if(%doValueCheck && isObject(%object.client) && %object.client.getTeam().name !$= %strCheckValue)
+						continue;
+
+					$InputTarget_["Player"] 	= %object;
+					$InputTarget_["Client"] 	= %object.client;
+					$InputTarget_["Bot"] 		= %object; //this could end poorly but here we go
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= 0;
+				case 1: // BOT
+					if(%object.getClassName() !$= "AiPlayer")
+						continue; //skip AIPLAYERS, PLAYERS only
+						
+					if(%doValueCheck && %object.getTeam().name !$= %strCheckValue)
+						continue;
+						
+					$InputTarget_["Player"] 	= %object;
+					$InputTarget_["Client"] 	= %object; //hbot clients are themselves i believe
+					$InputTarget_["Bot"] 		= %object;
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= 0;
+				case 4: // VEHICLE
+					$InputTarget_["Player"] 	= %object.getControllingObject();
+					$InputTarget_["Client"] 	= %object.getControllingClient();
+					$InputTarget_["Bot"] 		= %object.getControllingObject();
+					$InputTarget_["Projectile"] = 0;
+					$InputTarget_["Vehicle"] 	= %object;
+				case 5: // PROJECTILE
+					$InputTarget_["Projectile"] = %object;
+					$InputTarget_["Player"] 	= %object.sourceObject;
+					$InputTarget_["Client"] 	= %object.client;
+					$InputTarget_["Vehicle"] 	= 0;
+					$InputTarget_["Bot"] 		= 0;
+			}
+			$InputTarget_["MiniGame"] 			= getMiniGameFromObject (%object);
+		}
+		
+		%brick.processInputEvent("onRadialMatch", $InputTarget_["Client"]); //might anger quotaobjects
+	}
+
+	if(%boundsHigh !$= "" && %boundsLow !$= "")
+	{
+		for(%i = 0; %i < %brick.numEvents; %i++)
+		{
+			if(%i < %boundsLow || %i > %boundsHigh) //non-matching
+			{
+				if(%brick.eventInput[%i] $= "onRadialMatch")
+					%brick.eventEnabled[%i] = %oldEnabled[%i];
 			}
 		}
 	}
