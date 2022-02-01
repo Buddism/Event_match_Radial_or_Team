@@ -164,7 +164,7 @@ function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %strChec
 	}
 }
 
-registerInputEvent(Player, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
+registerOutputEvent(Player, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100" TAB "string 50 100");
 
 function Player::matchRadialCheck(%this, %typeID, %information, %bounds, %strCheckValue)
 {
@@ -308,7 +308,7 @@ function Player::matchRadialCheck(%this, %typeID, %information, %bounds, %strChe
 }
 
 
-registerInputEvent(Bot, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" TAB "Player Player" TAB "Client GameConnection" TAB "Vehicle Vehicle" TAB "Projectile Projectile" TAB "Minigame Minigame");
+registerOutputEvent(Bot, "matchRadialCheck", "list Player 0 Bot 1 Brick 2 Vehicle 4 Projectile 5" TAB "string 50 100" TAB "string 50 100" TAB "string 50 100");
 
 function AiPlayer::matchRadialCheck(%this, %typeID, %information, %bounds, %strCheckValue)
 {
