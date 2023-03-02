@@ -48,7 +48,7 @@ registerInputEvent(fxDtsBrick, "onRadialMatch", "Self fxDtsBrick" TAB "Bot Bot" 
 
 function fxDtsBrick::matchRadialCheck(%this, %typeID, %radius, %bounds, %strCheckValue)
 {
-	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+	if(%typeID < 2 && !isFunction("GameConnection", "getTeam"))
 		%doValueCheck = false;
 	else
 		%doValueCheck = %strCheckValue !$= "";
@@ -179,7 +179,7 @@ function Player::matchRadialCheck(%this, %typeID, %information, %bounds, %strChe
 	if(!isObject(%brick))
 		return;
 
-	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+	if(%typeID < 2 && !isFunction("GameConnection", "getTeam"))
 		%doValueCheck = false;
 	else
 		%doValueCheck = %strCheckValue !$= "";
@@ -308,7 +308,7 @@ function AiPlayer::matchRadialCheck(%this, %typeID, %information, %bounds, %strC
 	if(!isObject(%brick))
 		return;
 
-	if(%type < 2 && !isFunction("GameConnection", "getTeam"))
+	if(%typeID < 2 && !isFunction("GameConnection", "getTeam"))
 		%doValueCheck = false;
 	else
 		%doValueCheck = %strCheckValue !$= "";
